@@ -1,0 +1,302 @@
+// ConnectHub AI Prisma Database Schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  RECRUITER
+  ADMIN
+}
+
+enum ConnectionStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum JobType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERNSHIP
+  REMOTE
+}
+
+enum NotificationType {
+  LIKE
+  COMMENT
+  CONNECTION_REQUEST
+  CONNECTION_ACCEPTED
+  JOB_ALERT
+  SYSTEM
+}
+
+model User {
+  id                String       @id @default(uuid())
+  email             String       @unique
+  passwordHash      String?
+  googleId          String?      @unique
+  fullName          String
+  headline          String?
+  role              Role         @default(USER)
+  isVerified        Boolean      @default(false)
+  avatarUrl         String?
+  coverUrl          String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  profile           Profile?
+  posts             Post[]
+  comments          Comment[]
+  likes             Like[]
+  pollVotes         PollVote[]
+  
+  sentConnections     Connection[] @relation("SentConnections")
+  receivedConnections Connection[] @relation("ReceivedConnections")
+  
+  sentMessages      Message[]    @relation("SentMessages")
+  receivedMessages  Message[]    @relation("ReceivedMessages")
+  
+  jobApplications   JobApplication[]
+  postedJobs        Job[]        @relation("PostedJobs")
+  company           Company?
+  notifications     Notification[]
+  aiLogs            AIUsageLog[]
+  reports           Report[]     @relation("ReportedByUser")
+
+  @@index([email])
+  @@index([role])
+}
+
+model Profile {
+  id              String       @id @default(uuid())
+  userId          String       @unique
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio             String?
+  location        String?
+  websiteUrl      String?
+  githubUrl       String?
+  linkedinUrl     String?
+  twitterUrl      String?
+  resumeUrl       String?
+  resumeScore     Int?
+  aiBioSummary    String?
+  
+  experiences     Experience[]
+  education       Education[]
+  skills          Skill[]
+}
+
+model Experience {
+  id          String   @id @default(uuid())
+  profileId   String
+  profile     Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  company     String
+  position    String
+  location    String?
+  startDate   DateTime
+  endDate     DateTime?
+  isCurrent   Boolean  @default(false)
+  description String?
+}
+
+model Education {
+  id           String   @id @default(uuid())
+  profileId    String
+  profile      Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  institution  String
+  degree       String
+  fieldOfStudy String?
+  startDate    DateTime
+  endDate      DateTime?
+}
+
+model Skill {
+  id        String   @id @default(uuid())
+  profileId String
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  name      String
+  level     String?  // Beginner, Intermediate, Expert
+}
+
+model Post {
+  id           String    @id @default(uuid())
+  authorId     String
+  author       User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  content      String
+  imageUrl     String?
+  videoUrl     String?
+  hashtags     String?   // JSON or comma separated
+  isAiGenerated Boolean  @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  comments     Comment[]
+  likes        Like[]
+  poll         Poll?
+
+  @@index([authorId])
+  @@index([createdAt])
+}
+
+model Poll {
+  id        String       @id @default(uuid())
+  postId    String       @unique
+  post      Post         @relation(fields: [postId], references: [id], onDelete: Cascade)
+  question  String
+  options   PollOption[]
+  expiresAt DateTime
+}
+
+model PollOption {
+  id        String     @id @default(uuid())
+  pollId    String
+  poll      Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  text      String
+  votes     PollVote[]
+}
+
+model PollVote {
+  id        String     @id @default(uuid())
+  optionId  String
+  option    PollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([optionId, userId])
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  content   String
+  createdAt DateTime @default(now())
+}
+
+model Like {
+  id        String   @id @default(uuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId])
+}
+
+model Connection {
+  id          String           @id @default(uuid())
+  senderId    String
+  sender      User             @relation("SentConnections", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId  String
+  receiver    User             @relation("ReceivedConnections", fields: [receiverId], references: [id], onDelete: Cascade)
+  status      ConnectionStatus @default(PENDING)
+  createdAt   DateTime         @default(now())
+
+  @@unique([senderId, receiverId])
+}
+
+model Company {
+  id          String   @id @default(uuid())
+  recruiterId String   @unique
+  recruiter   User     @relation(fields: [recruiterId], references: [id], onDelete: Cascade)
+  name        String
+  logoUrl     String?
+  description String?
+  website     String?
+  location    String?
+  jobs        Job[]
+}
+
+model Job {
+  id           String           @id @default(uuid())
+  posterId     String
+  poster       User             @relation("PostedJobs", fields: [posterId], references: [id], onDelete: Cascade)
+  companyId    String?
+  company      Company?         @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  title        String
+  description  String
+  requirements String?
+  location     String
+  jobType      JobType          @default(FULL_TIME)
+  salaryMin    Int?
+  salaryMax    Int?
+  isRemote     Boolean          @default(false)
+  createdAt    DateTime         @default(now())
+
+  applications JobApplication[]
+
+  @@index([posterId])
+}
+
+model JobApplication {
+  id          String   @id @default(uuid())
+  jobId       String
+  job         Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  applicantId String
+  applicant   User     @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+  resumeUrl   String?
+  coverLetter String?
+  status      String   @default("APPLIED") // APPLIED, REVIEWING, INTERVIEW, ACCEPTED, REJECTED
+  createdAt   DateTime @default(now())
+
+  @@unique([jobId, applicantId])
+}
+
+model Message {
+  id         String   @id @default(uuid())
+  senderId   String
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId String?
+  receiver   User?    @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  content    String
+  imageUrl   String?
+  channelId  String?  // Optional channel identifier for Discord-style rooms
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([senderId, receiverId])
+  @@index([channelId])
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+}
+
+model AIUsageLog {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  feature    String   // RESUME_REVIEW, BIO_GEN, POST_GEN, SKILL_RECOMMEND
+  tokensUsed Int      @default(0)
+  createdAt  DateTime @default(now())
+}
+
+model Report {
+  id          String   @id @default(uuid())
+  reporterId  String
+  reporter    User     @relation("ReportedByUser", fields: [reporterId], references: [id], onDelete: Cascade)
+  targetType  String   // USER, POST, JOB, COMMENT
+  targetId    String
+  reason      String
+  status      String   @default("PENDING") // PENDING, RESOLVED, DISMISSED
+  createdAt   DateTime @default(now())
+}

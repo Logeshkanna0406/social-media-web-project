@@ -1,0 +1,15 @@
+{
+  "name": "connecthub-ai-root",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Production SaaS Platform ConnectHub AI - Full Stack Monorepo",
+  "scripts": {
+    "install:all": "npm install --prefix client && npm install --prefix server",
+    "dev:client": "npm run dev --prefix client",
+    "dev:server": "npm run dev --prefix server",
+    "build:client": "npm run build --prefix client",
+    "build:server": "npm run build --prefix server",
+    "build": "npm run build:client && npm run build:server",
+    "test": "npm run test --prefix server"
+  }
+}
