@@ -15,7 +15,11 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
 
   useEffect(() => {
-    const newSocket = io('/', {
+    // Dynamic Socket URL calculation for production vs development
+    const socketUrl = import.meta.env.VITE_SOCKET_URL || 
+                      (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : '');
+
+    const newSocket = io(socketUrl || window.location.origin, {
       autoConnect: true,
       transports: ['websocket', 'polling']
     });
