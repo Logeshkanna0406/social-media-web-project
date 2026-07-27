@@ -122,6 +122,95 @@ async function seed() {
   });
   console.log('✅ Recruiter user seeded:', recruiter.email);
 
+  // Additional Registered Users for Networking & Multi-User Testing
+  const user2 = await prisma.user.upsert({
+    where: { email: 'priya@connecthub.ai' },
+    update: {},
+    create: {
+      email: 'priya@connecthub.ai',
+      passwordHash: await hash('Password123!'),
+      fullName: 'Priya Sharma',
+      headline: 'Senior AI Research Engineer & PyTorch Specialist',
+      role: 'USER',
+      isVerified: true,
+      avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=300&q=80',
+      coverUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80',
+      profile: {
+        create: {
+          bio: 'Building foundation models and fine-tuning transformer architectures for multimodal search.',
+          location: 'Seattle, WA',
+          skills: {
+            create: [
+              { name: 'Python', level: 'Expert' },
+              { name: 'PyTorch', level: 'Expert' },
+              { name: 'LLM Agents', level: 'Expert' },
+              { name: 'FastAPI', level: 'Intermediate' },
+            ],
+          },
+        },
+      },
+    },
+  });
+  console.log('✅ User seeded:', user2.email);
+
+  const user3 = await prisma.user.upsert({
+    where: { email: 'david@connecthub.ai' },
+    update: {},
+    create: {
+      email: 'david@connecthub.ai',
+      passwordHash: await hash('Password123!'),
+      fullName: 'David Chen',
+      headline: 'Backend Lead | Go & Distributed Systems',
+      role: 'USER',
+      isVerified: true,
+      avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80',
+      coverUrl: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1200&q=80',
+      profile: {
+        create: {
+          bio: 'Distributed databases enthusiast. Building low-latency backend pipelines in Golang and PostgreSQL.',
+          location: 'Austin, TX',
+          skills: {
+            create: [
+              { name: 'Go / Golang', level: 'Expert' },
+              { name: 'PostgreSQL', level: 'Expert' },
+              { name: 'Docker / K8s', level: 'Intermediate' },
+            ],
+          },
+        },
+      },
+    },
+  });
+  console.log('✅ User seeded:', user3.email);
+
+  const user4 = await prisma.user.upsert({
+    where: { email: 'elena@connecthub.ai' },
+    update: {},
+    create: {
+      email: 'elena@connecthub.ai',
+      passwordHash: await hash('Password123!'),
+      fullName: 'Elena Rostova',
+      headline: 'Product Designer & Design System Lead',
+      role: 'USER',
+      isVerified: true,
+      avatarUrl: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=300&q=80',
+      coverUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80',
+      profile: {
+        create: {
+          bio: 'Crafting glassmorphic interfaces, responsive animations, and accessible design systems.',
+          location: 'Toronto, Canada',
+          skills: {
+            create: [
+              { name: 'Figma', level: 'Expert' },
+              { name: 'Tailwind CSS', level: 'Expert' },
+              { name: 'UI/UX Design', level: 'Expert' },
+            ],
+          },
+        },
+      },
+    },
+  });
+  console.log('✅ User seeded:', user4.email);
+
   // ── Create Company for Recruiter ─────────────────────────────────
   const company = await prisma.company.upsert({
     where: { recruiterId: recruiter.id },
@@ -254,10 +343,13 @@ async function seed() {
   }
 
   console.log('\n🎉 Database seeding complete!');
-  console.log('   Demo accounts:');
-  console.log('   📧 admin@connecthub.ai       | Password123!  (ADMIN)');
-  console.log('   📧 demo@connecthub.ai         | Password123!  (USER)');
-  console.log('   📧 recruiter@connecthub.ai    | Password123!  (RECRUITER)');
+  console.log('   Registered Accounts (Password for all: Password123!):');
+  console.log('   📧 alex@connecthub.ai / demo@connecthub.ai  (Alex Morgan - Full Stack)');
+  console.log('   📧 priya@connecthub.ai                      (Priya Sharma - AI Research)');
+  console.log('   📧 david@connecthub.ai                      (David Chen - Backend Lead)');
+  console.log('   📧 elena@connecthub.ai                      (Elena Rostova - Product Designer)');
+  console.log('   📧 recruiter@connecthub.ai                  (Sarah Jenkins - Tech Recruiter)');
+  console.log('   📧 admin@connecthub.ai                      (ConnectHub Admin)');
 }
 
 seed()
