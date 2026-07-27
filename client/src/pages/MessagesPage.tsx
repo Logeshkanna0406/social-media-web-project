@@ -31,28 +31,38 @@ export const MessagesPage: React.FC = () => {
     { id: 'channel-career-advice', name: 'career-advice', desc: 'Resume reviews & salary negotiations' }
   ];
 
-  // Fetch connections for direct messaging
+  // Fetch connections & registered professionals for direct messaging
   useEffect(() => {
     const fetchConnections = async () => {
       try {
-        const res = await api.get('/connections');
-        setConnections(res.data);
+        const [connRes, sugRes] = await Promise.all([
+          api.get('/connections'),
+          api.get('/users/suggested'),
+        ]);
+
+        const mergedMap = new Map<string, User>();
+        connRes.data.forEach((u: User) => mergedMap.set(u.id, u));
+        sugRes.data.forEach((u: User) => {
+          if (!mergedMap.has(u.id)) mergedMap.set(u.id, u);
+        });
+
+        const allUsers = Array.from(mergedMap.values());
+        setConnections(allUsers);
 
         if (targetUserIdParam) {
-          const match = res.data.find((c: User) => c.id === targetUserIdParam);
+          const match = allUsers.find((c: User) => c.id === targetUserIdParam);
           if (match) {
             setSelectedPartner(match);
           } else {
-            // Fetch profile if user isn't in connection list yet
             try {
               const uRes = await api.get(`/users/${targetUserIdParam}`);
               setSelectedPartner(uRes.data.user);
             } catch (e) {
-              if (res.data.length > 0) setSelectedPartner(res.data[0]);
+              if (allUsers.length > 0) setSelectedPartner(allUsers[0]);
             }
           }
-        } else if (res.data.length > 0) {
-          setSelectedPartner(res.data[0]);
+        } else if (allUsers.length > 0) {
+          setSelectedPartner(allUsers[0]);
         }
       } catch (err) {
         console.error(err);
@@ -168,7 +178,7 @@ export const MessagesPage: React.FC = () => {
         {activeTab === 'direct' ? (
           <div className="flex-1 overflow-y-auto pr-1 flex flex-col gap-1.5">
             <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 px-1">
-              Connected Friends ({connections.length})
+              All Professionals & Contacts ({connections.length})
             </h3>
 
             {connections.length === 0 ? (

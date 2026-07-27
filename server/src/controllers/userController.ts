@@ -231,7 +231,7 @@ export class UserController {
       const users = await prisma.user.findMany({
         where: { id: { not: currentUserId } },
         select: userSelect,
-        take: 8,
+        take: 100,
         orderBy: { createdAt: 'desc' },
       });
       // Add simulated mutual connections count (real impl would join connections table)
