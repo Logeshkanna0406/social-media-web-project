@@ -1,4 +1,5 @@
 export type Role = 'USER' | 'RECRUITER' | 'ADMIN';
+export type ConnectionStatusType = 'NONE' | 'PENDING_SENT' | 'PENDING_RECEIVED' | 'ACCEPTED' | 'SELF';
 
 export interface User {
   id: string;
@@ -11,6 +12,14 @@ export interface User {
   coverUrl?: string;
   createdAt: string;
   mutualConnections?: number;
+  connectionId?: string;
+  connectedAt?: string;
+}
+
+export interface PendingConnectionRequest {
+  id: string;
+  sender: User;
+  createdAt: string;
 }
 
 export interface Skill {

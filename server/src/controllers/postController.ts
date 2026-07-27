@@ -89,7 +89,22 @@ export class PostController {
       const authorId = req.user?.userId;
       const { content, imageDataUri, videoUrl, hashtags, pollQuestion, pollOptions, isAiGenerated } = req.body;
 
-      if (!content && !imageDataUri && !pollQuestion) {
+      // Validate poll payload if present
+      const validPollOptions = Array.isArray(pollOptions)
+        ? pollOptions.map((o: any) => String(o).trim()).filter(Boolean)
+        : [];
+
+      const hasPoll = !!(pollQuestion?.trim() || validPollOptions.length > 0);
+      if (hasPoll) {
+        if (!pollQuestion?.trim()) {
+          return res.status(400).json({ error: 'Poll question is required when creating a poll' });
+        }
+        if (validPollOptions.length < 2) {
+          return res.status(400).json({ error: 'A poll must have at least 2 non-empty options' });
+        }
+      }
+
+      if (!content?.trim() && !imageDataUri && !hasPoll) {
         return res.status(400).json({ error: 'Post must have content, media, or a poll' });
       }
 
@@ -117,14 +132,14 @@ export class PostController {
           videoUrl: videoUrl || null,
           hashtags: hashtagList.length > 0 ? JSON.stringify(hashtagList) : null,
           isAiGenerated: !!isAiGenerated,
-          ...(pollQuestion && pollOptions && pollOptions.length >= 2
+          ...(hasPoll
             ? {
                 poll: {
                   create: {
-                    question: pollQuestion,
+                    question: pollQuestion.trim(),
                     expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
                     options: {
-                      create: (pollOptions as string[]).map((text) => ({ text })),
+                      create: validPollOptions.map((text: string) => ({ text })),
                     },
                   },
                 },
@@ -201,9 +216,12 @@ export class PostController {
       });
       if (!option) return res.status(404).json({ error: 'Poll option not found' });
 
-      // Check if user already voted
-      const existingVote = await prisma.pollVote.findUnique({
-        where: { optionId_userId: { optionId, userId } },
+      // Check if user already voted on ANY option belonging to this post's poll
+      const existingVote = await prisma.pollVote.findFirst({
+        where: {
+          userId,
+          option: { poll: { postId } },
+        },
       });
       if (existingVote) return res.status(400).json({ error: 'Already voted on this poll' });
 

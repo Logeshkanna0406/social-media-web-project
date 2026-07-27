@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
-import { Image, BarChart2, Sparkles, X, Upload } from 'lucide-react';
+import { Image, BarChart2, Sparkles, X, Plus, Trash2 } from 'lucide-react';
 import { api } from '../../services/api';
 import { useToast } from '../../hooks/useToast';
 
@@ -21,6 +21,22 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClos
   const [pollOptions, setPollOptions] = useState(['', '']);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeneratingAi, setIsGeneratingAi] = useState(false);
+
+  const handleAddPollOption = () => {
+    if (pollOptions.length >= 5) {
+      addToast('info', 'Maximum options reached', 'Polls can have up to 5 options.');
+      return;
+    }
+    setPollOptions(prev => [...prev, '']);
+  };
+
+  const handleRemovePollOption = (index: number) => {
+    if (pollOptions.length <= 2) {
+      addToast('info', 'Minimum 2 options', 'A poll requires at least 2 options.');
+      return;
+    }
+    setPollOptions(prev => prev.filter((_, idx) => idx !== index));
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -58,20 +74,40 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClos
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!content.trim() && !imageDataUri && !pollQuestion) return;
+
+    const trimmedContent = content.trim();
+    const validOptions = pollOptions.map(o => o.trim()).filter(Boolean);
+
+    if (showPoll) {
+      if (!pollQuestion.trim()) {
+        addToast('error', 'Poll Question Required', 'Please enter a question for your poll.');
+        return;
+      }
+      if (validOptions.length < 2) {
+        addToast('error', 'At least 2 Options Required', 'Please enter at least 2 non-empty poll options.');
+        return;
+      }
+    } else {
+      if (!trimmedContent && !imageDataUri) {
+        addToast('info', 'Post Content Required', 'Please write something or upload an image.');
+        return;
+      }
+    }
 
     setIsSubmitting(true);
     try {
       await api.post('/posts', {
-        content,
+        content: trimmedContent,
         imageDataUri: imageDataUri || null,
-        pollQuestion: showPoll ? pollQuestion : null,
-        pollOptions: showPoll ? pollOptions.filter(o => o.trim()) : null
+        pollQuestion: showPoll ? pollQuestion.trim() : null,
+        pollOptions: showPoll ? validOptions : null
       });
       addToast('success', 'Post Published!', 'Your post is now live and saved in database.');
       setContent('');
       setImageDataUri(null);
       setImagePreview('');
+      setPollQuestion('');
+      setPollOptions(['', '']);
       setShowPoll(false);
       onPostCreated();
       onClose();
@@ -111,28 +147,65 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClos
 
         {/* Poll Fields */}
         {showPoll && (
-          <div className="p-3 rounded-xl bg-slate-900/60 border border-white/10 flex flex-col gap-2">
+          <div className="p-3.5 rounded-xl bg-slate-900/80 border border-indigo-500/30 flex flex-col gap-3">
+            <div className="flex justify-between items-center">
+              <span className="text-xs font-bold text-indigo-400 flex items-center gap-1.5">
+                <BarChart2 className="w-4 h-4" /> Community Poll Creator
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowPoll(false)}
+                className="text-xs text-slate-400 hover:text-rose-400"
+              >
+                Remove Poll
+              </button>
+            </div>
+
             <input
               type="text"
-              placeholder="Ask a community question..."
+              placeholder="Ask a question (e.g. Which web framework do you prefer for 2026?)..."
               value={pollQuestion}
               onChange={(e) => setPollQuestion(e.target.value)}
-              className="glass-input rounded-lg p-2 text-xs text-slate-100"
+              className="glass-input rounded-lg p-2.5 text-xs text-slate-100 focus:border-indigo-500"
             />
-            {pollOptions.map((opt, idx) => (
-              <input
-                key={idx}
-                type="text"
-                placeholder={`Option ${idx + 1}`}
-                value={opt}
-                onChange={(e) => {
-                  const updated = [...pollOptions];
-                  updated[idx] = e.target.value;
-                  setPollOptions(updated);
-                }}
-                className="glass-input rounded-lg p-2 text-xs text-slate-100"
-              />
-            ))}
+
+            <div className="flex flex-col gap-2">
+              {pollOptions.map((opt, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    placeholder={`Option ${idx + 1}`}
+                    value={opt}
+                    onChange={(e) => {
+                      const updated = [...pollOptions];
+                      updated[idx] = e.target.value;
+                      setPollOptions(updated);
+                    }}
+                    className="flex-1 glass-input rounded-lg p-2 text-xs text-slate-100"
+                  />
+                  {pollOptions.length > 2 && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemovePollOption(idx)}
+                      className="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-white/5"
+                      title="Delete Option"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {pollOptions.length < 5 && (
+              <button
+                type="button"
+                onClick={handleAddPollOption}
+                className="self-start flex items-center gap-1 text-xs font-semibold text-indigo-400 hover:text-indigo-300 mt-1"
+              >
+                <Plus className="w-3.5 h-3.5" /> Add Option
+              </button>
+            )}
           </div>
         )}
 
@@ -147,7 +220,9 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClos
             <button
               type="button"
               onClick={() => setShowPoll(!showPoll)}
-              className="p-2 text-slate-400 hover:text-indigo-400 hover:bg-white/5 rounded-lg transition-colors"
+              className={`p-2 rounded-lg transition-colors ${
+                showPoll ? 'text-indigo-400 bg-indigo-500/10' : 'text-slate-400 hover:text-indigo-400 hover:bg-white/5'
+              }`}
               title="Create Poll"
             >
               <BarChart2 className="w-4 h-4" />
@@ -173,3 +248,4 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClos
     </Modal>
   );
 };
+

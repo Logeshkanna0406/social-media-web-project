@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { AuthController } from '../controllers/authController';
 import { UserController } from '../controllers/userController';
+import { ConnectionController } from '../controllers/connectionController';
 import { PostController } from '../controllers/postController';
 import { JobController } from '../controllers/jobController';
 import { MessageController } from '../controllers/messageController';
@@ -24,6 +25,15 @@ router.get('/users/search', UserController.searchUsers);
 router.get('/users/suggested', authenticateJWT, UserController.getSuggestedConnections);
 router.get('/users/:userId', UserController.getProfile);
 router.put('/users/profile', authenticateJWT, UserController.updateProfile);
+
+// ── Connections ───────────────────────────────────────────────────────
+router.post('/connections/request/:targetUserId', authenticateJWT, ConnectionController.sendRequest);
+router.post('/connections/accept/:connectionId', authenticateJWT, ConnectionController.acceptRequest);
+router.post('/connections/reject/:connectionId', authenticateJWT, ConnectionController.rejectRequest);
+router.delete('/connections/:targetUserId', authenticateJWT, ConnectionController.removeConnection);
+router.get('/connections/status/:targetUserId', authenticateJWT, ConnectionController.getConnectionStatus);
+router.get('/connections', authenticateJWT, ConnectionController.getUserConnections);
+router.get('/connections/pending', authenticateJWT, ConnectionController.getPendingRequests);
 
 // ── Posts & Feed ──────────────────────────────────────────────────────
 router.get('/posts/feed', authenticateJWT, PostController.getFeed);

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Post } from '../../types';
 import { GlassCard } from '../ui/GlassCard';
 import { Heart, MessageSquare, Share2, Sparkles, MoreHorizontal } from 'lucide-react';
@@ -32,14 +33,18 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onRefresh }) => {
       {/* Header */}
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-3">
-          <img
-            src={post.author.avatarUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=User'}
-            alt={post.author.fullName}
-            className="w-11 h-11 rounded-xl object-cover ring-2 ring-indigo-500/30"
-          />
+          <Link to={`/profile/${post.authorId}`} className="shrink-0 hover:opacity-90 transition-opacity">
+            <img
+              src={post.author.avatarUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=User'}
+              alt={post.author.fullName}
+              className="w-11 h-11 rounded-xl object-cover ring-2 ring-indigo-500/30"
+            />
+          </Link>
           <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-2">
-              <h3 className="text-sm font-bold text-slate-100 truncate">{post.author.fullName}</h3>
+              <Link to={`/profile/${post.authorId}`} className="text-sm font-bold text-slate-100 hover:text-indigo-400 transition-colors truncate">
+                {post.author.fullName}
+              </Link>
               {post.isAiGenerated && (
                 <Badge variant="purple" size="sm" icon={<Sparkles className="w-3 h-3 text-purple-400" />}>
                   AI Assistant

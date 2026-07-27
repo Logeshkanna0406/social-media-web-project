@@ -30,6 +30,10 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       newSocket.emit('register_user', user.id);
     }
 
+    newSocket.on('online_users_list', (userIds: string[]) => {
+      setOnlineUsers(userIds);
+    });
+
     newSocket.on('user_online_status', ({ userId, status }) => {
       setOnlineUsers(prev => {
         if (status === 'online' && !prev.includes(userId)) {

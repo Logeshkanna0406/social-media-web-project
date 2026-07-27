@@ -17,9 +17,16 @@ if (process.env.NODE_ENV !== 'production') {
 export const connectDB = async () => {
   try {
     await prisma.$connect();
-    logger.info('✅ Connected to Neon PostgreSQL via Prisma ORM');
+    logger.info('✅ Connected to PostgreSQL via Prisma ORM');
   } catch (err: any) {
-    logger.error(`❌ Database connection failed: ${err.message}`);
+    logger.error('----------------------------------------------------------------------');
+    logger.error(`❌ Database Connection Error: ${err.message}`);
+    logger.error('👉 Cause: Unable to reach the PostgreSQL host configured in server/.env');
+    logger.error('👉 Resolution Options:');
+    logger.error('   1. Check your internet connection (if using Neon Cloud PostgreSQL).');
+    logger.error('   2. Update `DATABASE_URL` in `server/.env` to a live PostgreSQL connection string.');
+    logger.error('      (e.g., from Neon.tech, Supabase, or a local PostgreSQL instance: postgresql://postgres:password@localhost:5432/connecthub)');
+    logger.error('----------------------------------------------------------------------');
     process.exit(1);
   }
 };

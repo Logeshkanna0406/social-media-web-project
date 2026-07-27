@@ -20,6 +20,7 @@ export class SocketService {
 
       socket.on('register_user', (userId: string) => {
         this.userSockets.set(userId, socket.id);
+        socket.emit('online_users_list', Array.from(this.userSockets.keys()));
         this.io.emit('user_online_status', { userId, status: 'online' });
         logger.info(`User registered to socket: ${userId}`);
       });

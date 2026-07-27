@@ -26,8 +26,75 @@ export class UserController {
       });
       if (!user) return res.status(404).json({ error: 'User not found' });
 
+      // Fetch user stats & posts
+      const connectionsCount = await prisma.connection.count({
+        where: {
+          status: 'ACCEPTED',
+          OR: [{ senderId: userId }, { receiverId: userId }],
+        },
+      });
+
+      const userPosts = await prisma.post.findMany({
+        where: { authorId: userId },
+        include: {
+          author: { select: { id: true, fullName: true, headline: true, avatarUrl: true } },
+          likes: { select: { userId: true } },
+          comments: {
+            include: { author: { select: { fullName: true, avatarUrl: true } } },
+            orderBy: { createdAt: 'asc' },
+          },
+          poll: {
+            include: { options: { include: { votes: { select: { userId: true } } } } },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+      });
+
+      const formattedPosts = userPosts.map(post => ({
+        id: post.id,
+        authorId: post.authorId,
+        author: post.author,
+        content: post.content,
+        imageUrl: post.imageUrl,
+        videoUrl: post.videoUrl,
+        hashtags: post.hashtags ? JSON.parse(post.hashtags) : [],
+        isAiGenerated: post.isAiGenerated,
+        likesCount: post.likes.length,
+        commentsCount: post.comments.length,
+        isLiked: post.likes.some(l => l.userId === userId),
+        comments: post.comments.map(c => ({
+          id: c.id,
+          authorName: c.author.fullName,
+          authorAvatar: c.author.avatarUrl || '',
+          content: c.content,
+          createdAt: c.createdAt,
+        })),
+        poll: post.poll
+          ? {
+              id: post.poll.id,
+              question: post.poll.question,
+              options: post.poll.options.map(o => ({
+                id: o.id,
+                text: o.text,
+                votesCount: o.votes.length,
+              })),
+              userVotedOptionId: post.poll.options.find(o => o.votes.some(v => v.userId === userId))?.id || null,
+            }
+          : null,
+        createdAt: post.createdAt,
+      }));
+
       const { profile, ...userData } = user;
-      return res.json({ user: userData, profile: profile || {} });
+      return res.json({
+        user: userData,
+        profile: profile || {},
+        stats: {
+          connectionsCount,
+          postsCount: formattedPosts.length,
+        },
+        posts: formattedPosts,
+      });
     } catch (err: any) {
       return res.status(500).json({ error: 'Failed to fetch profile' });
     }
