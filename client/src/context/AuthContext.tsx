@@ -32,6 +32,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } catch (err) {
           logout();
         }
+      } else {
+        setToken(null);
+        setUser(null);
+        localStorage.removeItem('connecthub_token');
+        localStorage.removeItem('connecthub_user');
       }
       setIsLoading(false);
     };

@@ -18,9 +18,9 @@ import { LoginPage, RegisterPage } from './pages/AuthPages';
 import { NotFoundPage } from './pages/NotFoundPage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, isLoading } = useAuth();
+  const { user, token, isLoading } = useAuth();
   if (isLoading) return <div className="min-h-screen bg-[#090d16]" />;
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user || !token) return <Navigate to="/login" replace />;
   return <>{children}</>;
 };
 
